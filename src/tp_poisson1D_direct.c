@@ -9,6 +9,10 @@
 #define TRI 1
 #define SV 2
 
+double calculate_elapsed_time(struct timespec start, struct timespec end) {
+    return (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) * 1e-9;
+}
+
 int main(int argc,char *argv[])
 /* ** argc: Nombre d'arguments */
 /* ** argv: Valeur des arguments */
@@ -27,6 +31,14 @@ int main(int argc,char *argv[])
   double *AB;
 
   double relres;
+
+  double dgbsv_time, dgbtrs_time, dgbtrf_time, dgbtrftridiag_time;
+  dgbsv_time = 0.0;
+  dgbtrs_time = 0.0;
+  dgbtrf_time = 0.0;
+  dgbtrftridiag_time = 0.0;
+
+  struct timespec start, end;
 
   if (argc == 2) {
     IMPLEM = atoi(argv[1]);
@@ -70,18 +82,27 @@ int main(int argc,char *argv[])
 
   /* LU Factorization */
   if (IMPLEM == TRF) {
+    clock_gettime(CLOCK_MONOTONIC, &start);
     dgbtrf_(&la, &la, &kl, &ku, AB, &lab, ipiv, &info);
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    dgbtrf_time = calculate_elapsed_time(start, end);
   }
 
   /* LU for tridiagonal matrix  (can replace dgbtrf_) */
   if (IMPLEM == TRI) {
+    clock_gettime(CLOCK_MONOTONIC, &start);
     dgbtrftridiag(&la, &la, &kl, &ku, AB, &lab, ipiv, &info);
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    dgbtrftridiag_time = calculate_elapsed_time(start, end);
   }
 
   if (IMPLEM == TRI || IMPLEM == TRF){
     /* Solution (Triangular) */
     if (info==0){
+      clock_gettime(CLOCK_MONOTONIC, &start);
       dgbtrs_("N", &la, &kl, &ku, &NRHS, AB, &lab, ipiv, RHS, &la, &info);
+      clock_gettime(CLOCK_MONOTONIC, &end);
+      dgbtrs_time = calculate_elapsed_time(start, end);
       if (info!=0){printf("\n INFO DGBTRS = %d\n",info);}
     }else{
       printf("\n INFO = %d\n",info);
@@ -91,7 +112,10 @@ int main(int argc,char *argv[])
   /* It can also be solved with dgbsv */
   if (IMPLEM == SV) {
     // Direct resolution with dgbsv
+    clock_gettime(CLOCK_MONOTONIC, &start);
     dgbsv_(&la, &kl, &ku, &NRHS, AB, &lab, ipiv, RHS, &la, &info);
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    dgbsv_time = calculate_elapsed_time(start, end);
     if (info == 0) {
       printf("\n Solution computed successfully using dgbsv.\n");
     } else {
@@ -107,9 +131,16 @@ int main(int argc,char *argv[])
   
   printf("\nThe relative forward error is relres = %e\n",relres);
 
+  printf("\nExecution times (in seconds):\n");
+  printf("dgbtrf_time: %f seconds\n", dgbtrf_time);
+  printf("dgbtrftridiag_time: %f seconds\n", dgbtrftridiag_time);
+  printf("dgbtrs_time: %f seconds\n", dgbtrs_time);
+  printf("dgbsv_time: %f seconds\n", dgbsv_time);
+
   free(RHS);
   free(EX_SOL);
   free(X);
   free(AB);
+  free(ipiv);
   printf("\n\n--------- End -----------\n");
-}
+}       
