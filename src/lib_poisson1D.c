@@ -50,13 +50,47 @@ void set_GB_operator_colMajor_poisson1D_Id(double* AB, int *lab, int *la, int *k
   }
 }
 
+/**
+ * @brief Initialise le second membre (RHS) pour le problème de Poisson 1D avec conditions de Dirichlet.
+ * @param RHS   Pointeur vers le tableau (de dimension la) contenant le second membre (RHS) à construire.
+ * @param la    Pointeur vers le nombre de points (inconnues) de la grille 1D (taille de la matrice carrée la x la).
+ * @param BC0   Pointeur vers la valeur de la condition de Dirichlet au bord gauche (u(0) = BC0).
+ * @param BC1   Pointeur vers la valeur de la condition de Dirichlet au bord droit (u(1) = BC1).
+ */
 void set_dense_RHS_DBC_1D(double* RHS, int* la, double* BC0, double* BC1){
-}  
+  // Initialisation à zéro
+  for (int i = 0; i < *la; i++) {
+    RHS[i] = 0.0;
+  }
+  // Condition au bord de DIRICHLET
+  RHS[0] = *BC0; // Gauche
+  RHS[*la - 1] = *BC1; // Droit
+}
 
+/**
+ * @brief Calcule la solution analytique de l'équation de Poisson 1D avec conditions de Dirichlet.
+ * @param EX_SOL  Pointeur vers le tableau contenant la solution analytique de dimension la.
+ * @param X       Pointeur vers le tableau contenant les positions des points de la grille de dimension la.
+ * @param la      Pointeur vers le nombre de points (inconnues) de la grille 1D (taille de la matrice carrée la x la).
+ * @param BC0   Pointeur vers la valeur de la condition de Dirichlet au bord gauche (u(0) = BC0).
+ * @param BC1   Pointeur vers la valeur de la condition de Dirichlet au bord droit (u(1) = BC1).
+ */
 void set_analytical_solution_DBC_1D(double* EX_SOL, double* X, int* la, double* BC0, double* BC1){
-}  
+  for (int i = 0; i < *la; i++) {
+    *EX_SOL[i] = *BC0 + X[i] * (*BC1 - *BC0); // Solution linéaire de l'énoncé
+  }
+}
 
+/**
+ * @brief Calcule les points de la grille 1D uniformément espacés sur l'intervalle [0, 1].
+ * @param X       Pointeur vers le tableau contenant les positions des points de la grille de dimension la.
+ * @param la      Pointeur vers le nombre de points (inconnues) de la grille 1D (taille de la matrice carrée la x la).
+ */
 void set_grid_points_1D(double* x, int* la){
+  double h = 1.0 / (*la + 1); // pas de la grille
+  for (int i = 0; i < *la; i++) {
+    x[i] = (i + 1) * h;
+  }
 }
 
 double relative_forward_error(double* x, double* y, int* la){
