@@ -6,9 +6,35 @@
 #include "lib_poisson1D.h"
 
 void set_GB_operator_colMajor_poisson1D(double* AB, int *lab, int *la, int *kv){
+  // Initialisation à zéro
+  for (int i = 0; i < lab * la; i++) {
+    AB[i] = 0.0;
+  }
+
+  // Remplissage de la diagonale principale et des bandes sous/sur diagonale
+  for (int i = 0; i < la; i++) {
+    // Bande sous-diagonale
+    if (i > 0) {
+      AB[(kv - 1) + i * lab] = -1.0;
+    }
+    // Diagonale principale
+    AB[(kv) + i * lab] = 2.0;
+    // Bande sur-diagonale
+    if (i < la - 1) {
+      AB[(kv + 1) + i * lab] = -1.0;
+    }
+  }
 }
 
 void set_GB_operator_colMajor_poisson1D_Id(double* AB, int *lab, int *la, int *kv){
+  // Initialisation à zéro
+  for (int i = 0; i < (*lab) * (*la); i++) {
+    AB[i] = 0.0;
+  }
+  // Remplissage de la diagonale principale avec des 1
+  for (int i = 0; i < *la; i++) {
+    AB[(*kv) + i * (*lab)] = 1.0;
+  }
 }
 
 void set_dense_RHS_DBC_1D(double* RHS, int* la, double* BC0, double* BC1){
