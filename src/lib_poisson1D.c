@@ -5,6 +5,13 @@
 /**********************************************/
 #include "lib_poisson1D.h"
 
+/**
+ * @brief Initialise l'opérateur de Poisson 1D au format bande (GB) en stockage colonne par colonne (col-major).
+ * @param AB    Pointeur vers le tableau de la matrice bande au format col-major (dimension (lab x la)).
+ * @param lab   Nombre total de bandes significatives (par exemple 3 pour une tridiagonale).
+ * @param la    Nombre de points (inconnues) de la grille 1D (taille de la matrice carrée la x la).
+ * @param kv    Position de la diagonale principale dans la matrice bande (pour lab = 3, kv = 1).
+ */
 void set_GB_operator_colMajor_poisson1D(double* AB, int *lab, int *la, int *kv){
   // Initialisation à zéro
   for (int i = 0; i < lab * la; i++) {
@@ -25,7 +32,13 @@ void set_GB_operator_colMajor_poisson1D(double* AB, int *lab, int *la, int *kv){
     }
   }
 }
-
+/**
+ * @brief Initialise la matrice identité au format bande (GB) en stockage colonne par colonne (col-major).
+ * @param AB    Pointeur vers le tableau de la matrice bande au format col-major (dimension (lab x la)).
+ * @param lab   Nombre total de bandes significatives (par exemple 3 pour une tridiagonale).
+ * @param la    Nombre de points (inconnues) de la grille 1D (taille de la matrice carrée la x la).
+ * @param kv    Position de la diagonale principale dans la matrice bande (pour lab = 3, kv = 1).
+ */
 void set_GB_operator_colMajor_poisson1D_Id(double* AB, int *lab, int *la, int *kv){
   // Initialisation à zéro
   for (int i = 0; i < (*lab) * (*la); i++) {
