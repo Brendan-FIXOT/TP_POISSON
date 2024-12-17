@@ -100,6 +100,28 @@ int indexABCol(int i, int j, int *lab){
   return 0;
 }
 
+/**
+ * @brief Effectue la factorisation LU d'une matrice tridiagonale au format bande (GB). 
+ * @param la     Nombre de points (inconnues) de la grille 1D (taille de la matrice carrée la x la).
+ * @param n      Taille de la matrice A (logiquement la même que la).
+ * @param kl     Nombre de sous-diagonales (pour une tridiagonale, kl = 1).
+ * @param ku     Nombre de sur-diagonales (pour une tridiagonale, ku = 1).
+ * @param AB     Pointeur vers le tableau de la matrice bande au format col-major (dimension (lab x la)).
+ * @param lab    Nombre total de bandes significatives (par exemple 3 pour une tridiagonale).
+ * @param ipiv   Tableau de pivots de la factorisation (non utilisé ici, mais demandé pour la compatibilité LAPACK).
+ * @param info   Indicateur de succès de la factorisation.
+ * @return info  Retourne 0 si la factorisation réussit, sinon une erreur.
+ */
 int dgbtrftridiag(int *la, int*n, int *kl, int *ku, double *AB, int *lab, int *ipiv, int *info){
+  *info = 0;
+
+  for (int i = 0; i < *la - 1; i++) {    
+    // 1. Mise à jour des coefficients de L (bande sous-diagonale)
+    double l = AB[0 + (k + 1) * (*lab)] / AB[1 + k * (*lab)];
+    AB[0 + (k + 1) * (*lab)] = l;
+
+    // 2. Mise à jour des coefficients de U (diagonale principale et bande au-dessus)
+    AB[1 + (k + 1) * (*lab)] -= l * AB[2 + k * (*lab)];
+  }
   return *info;
 }
