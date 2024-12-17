@@ -129,7 +129,7 @@ int indexABCol(int i, int j, int *lab){
 int dgbtrftridiag(int *la, int*n, int *kl, int *ku, double *AB, int *lab, int *ipiv, int *info){
   *info = 0;
 
-  for (int i = 0; i < (*la) - 1; i++) {    
+  for (int k = 0; k < (*la) - 1; k++) {    
     // 1. Mise à jour des coefficients de L (bande sous-diagonale)
     double l = AB[0 + (k + 1) * (*lab)] / AB[1 + k * (*lab)];
     AB[0 + (k + 1) * (*lab)] = l;
