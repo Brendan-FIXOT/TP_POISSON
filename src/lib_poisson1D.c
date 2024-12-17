@@ -72,8 +72,8 @@ void set_dense_RHS_DBC_1D(double* RHS, int* la, double* BC0, double* BC1){
  * @param EX_SOL  Pointeur vers le tableau contenant la solution analytique de dimension la.
  * @param X       Pointeur vers le tableau contenant les positions des points de la grille de dimension la.
  * @param la      Pointeur vers le nombre de points (inconnues) de la grille 1D (taille de la matrice carrée la x la).
- * @param BC0   Pointeur vers la valeur de la condition de Dirichlet au bord gauche (u(0) = BC0).
- * @param BC1   Pointeur vers la valeur de la condition de Dirichlet au bord droit (u(1) = BC1).
+ * @param BC0     Pointeur vers la valeur de la condition de Dirichlet au bord gauche (u(0) = BC0).
+ * @param BC1     Pointeur vers la valeur de la condition de Dirichlet au bord droit (u(1) = BC1).
  */
 void set_analytical_solution_DBC_1D(double* EX_SOL, double* X, int* la, double* BC0, double* BC1){
   for (int i = 0; i < *la; i++) {
@@ -83,8 +83,8 @@ void set_analytical_solution_DBC_1D(double* EX_SOL, double* X, int* la, double* 
 
 /**
  * @brief Calcule les points de la grille 1D uniformément espacés sur l'intervalle [0, 1].
- * @param X       Pointeur vers le tableau contenant les positions des points de la grille de dimension la.
- * @param la      Pointeur vers le nombre de points (inconnues) de la grille 1D (taille de la matrice carrée la x la).
+ * @param X   Pointeur vers le tableau contenant les positions des points de la grille de dimension la.
+ * @param la  Pointeur vers le nombre de points (inconnues) de la grille 1D (taille de la matrice carrée la x la).
  */
 void set_grid_points_1D(double* x, int* la){
   double h = 1.0 / (*la + 1); // pas de la grille
@@ -93,7 +93,21 @@ void set_grid_points_1D(double* x, int* la){
   }
 }
 
+/**
+ * @brief Calcule l'erreur relative directe entre deux vecteurs.
+ * @param x   Pointeur vers le vecteur de la solution approchée de dimension *la.
+ * @param y   Pointeur vers le vecteur de la solution de référence de dimension *la.
+ * @param la  Pointeur vers le nombre de points (inconnues) de la grille 1D (taille de la matrice carrée la x la).
+ * @return La valeur de l'erreur relative.
+ */
 double relative_forward_error(double* x, double* y, int* la){
+  double num = 0.0;
+  double den = 0.0;
+  for (int i = 0; i < *la; i++) {
+    num += (x[i] - y[i]) * (x[i] - y[i]); // Norme 2 du vecteur des erreurs
+    den += y[i] * y[i]; // Norme 2 de la solution de référence (on prend y car dans l'appel de la fonction l'argument y est EX_SOL)
+  }
+  return sqrt(num) / sqrt(den);
 }
 
 int indexABCol(int i, int j, int *lab){
