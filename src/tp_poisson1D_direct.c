@@ -46,7 +46,7 @@ int main(int argc,char *argv[])
   EX_SOL=(double *) malloc(sizeof(double)*la);
   X=(double *) malloc(sizeof(double)*la);
 
-  // TODO : you have to implement those functions
+  // These functions have been implemented 
   set_grid_points_1D(X, &la);
   set_dense_RHS_DBC_1D(RHS,&la,&T0,&T1);
   set_analytical_solution_DBC_1D(EX_SOL, X, &la, &T0, &T1);
@@ -90,7 +90,13 @@ int main(int argc,char *argv[])
 
   /* It can also be solved with dgbsv */
   if (IMPLEM == SV) {
-    // TODO : use dgbsv
+    // Direct resolution with dgbsv
+    dgbsv_(&la, &kl, &ku, &NRHS, AB, &lab, ipiv, RHS, &la, &info);
+    if (info == 0) {
+      printf("\n Solution computed successfully using dgbsv.\n");
+    } else {
+      printf("\nError in dgbsv, INFO = %d\n", info);
+    }
   }
 
   write_GB_operator_colMajor_poisson1D(AB, &lab, &la, "LU.dat");
