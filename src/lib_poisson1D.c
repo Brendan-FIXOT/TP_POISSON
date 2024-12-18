@@ -22,13 +22,13 @@ void set_GB_operator_colMajor_poisson1D(double* AB, int* lab, int *la, int *kv){
   for (int i = 0; i < *la; i++) {
     // Bande sous-diagonale
     if (i > 0) {
-      AB[(kv - 1) + i * (*lab)] = -1.0;
+      AB[((*kv) - 1) + i * (*lab)] = -1.0;
     }
     // Diagonale principale
-    AB[(kv) + i * (*lab)] = 2.0;
+    AB[(*kv) + i * (*lab)] = 2.0;
     // Bande sur-diagonale
     if (i < (*la) - 1) {
-      AB[(kv + 1) + i * (*lab)] = -1.0;
+      AB[((*kv) + 1) + i * (*lab)] = -1.0;
     }
   }
 }
@@ -77,7 +77,7 @@ void set_dense_RHS_DBC_1D(double* RHS, int* la, double* BC0, double* BC1){
  */
 void set_analytical_solution_DBC_1D(double* EX_SOL, double* X, int* la, double* BC0, double* BC1){
   for (int i = 0; i < *la; i++) {
-    *EX_SOL[i] = *BC0 + X[i] * (*BC1 - *BC0); // Solution linéaire de l'énoncé
+    EX_SOL[i] = *BC0 + X[i] * (*BC1 - *BC0); // Solution linéaire de l'énoncé
   }
 }
 
@@ -126,16 +126,27 @@ int indexABCol(int i, int j, int *lab){
  * @param info   Indicateur de succès de la factorisation.
  * @return info  Retourne 0 si la factorisation réussit, sinon une erreur.
  */
-int dgbtrftridiag(int *la, int*n, int *kl, int *ku, double *AB, int *lab, int *ipiv, int *info){
+int dgbtrftridiag(int *la, int* n, int *kl, int *ku, double *AB, int *lab, int *ipiv, int *info){
   *info = 0;
+  for (int k = 0; k < (*la) - 1; k++) {
+    // Vérification du pivot
+    double pivot = AB[1 + k * (*lab)];
+    if (pivot == 0.0) {
+      *info = k + 1; 
+      return *info;  // Retourne immédiatement l'erreur
+    }
 
-  for (int k = 0; k < (*la) - 1; k++) {    
-    // 1. Mise à jour des coefficients de L (bande sous-diagonale)
-    double l = AB[0 + (k + 1) * (*lab)] / AB[1 + k * (*lab)];
-    AB[0 + (k + 1) * (*lab)] = l;
+    // Stockage de la permutation (pas utile ici, mais évite le segmentation fault)
+    ipiv[k] = k + 1;
 
-    // 2. Mise à jour des coefficients de U (diagonale principale et bande au-dessus)
-    AB[1 + (k + 1) * (*lab)] -= l * AB[2 + k * (*lab)];
+    if ((k + 1) < *la) {
+      // 1. Mise à jour des coefficients de L (bande sous-diagonale)
+      double l = AB[0 + (k + 1) * (*lab)] / pivot;
+      AB[0 + (k + 1) * (*lab)] = l;
+
+      // 2. Mise à jour des coefficients de U (diagonale principale et bande au-dessus)
+      AB[1 + (k + 1) * (*lab)] -= l * AB[2 + k * (*lab)];
+    }
   }
   return *info;
 }

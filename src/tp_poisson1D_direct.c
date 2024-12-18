@@ -10,7 +10,7 @@
 #define SV 2
 
 double calculate_elapsed_time(struct timespec start, struct timespec end) {
-    return (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) * 1e-9;
+    return (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) * 1e-6;
 }
 
 int main(int argc,char *argv[])
@@ -46,7 +46,7 @@ int main(int argc,char *argv[])
     perror("Application takes at most one argument");
     exit(1);
   }
-
+  
   NRHS=1;
   nbpoints=10;
   la=nbpoints-2;
@@ -70,7 +70,7 @@ int main(int argc,char *argv[])
   kv=1;
   ku=1;
   kl=1;
-  lab=kv+kl+ku+1;
+  lab = kv + kl + ku + 1;
 
   AB = (double *) malloc(sizeof(double)*lab*la);
 
@@ -79,6 +79,15 @@ int main(int argc,char *argv[])
 
   printf("Solution with LAPACK\n");
   ipiv = (int *) calloc(la, sizeof(int));
+  
+  if (AB == NULL) {
+    perror("Erreur d'allocation de la matrice AB");
+    exit(EXIT_FAILURE);
+  }
+  if (ipiv == NULL) {
+    perror("Erreur d'allocation de ipiv");
+    exit(EXIT_FAILURE);
+  }
 
   /* LU Factorization */
   if (IMPLEM == TRF) {
@@ -131,11 +140,11 @@ int main(int argc,char *argv[])
   
   printf("\nThe relative forward error is relres = %e\n",relres);
 
-  printf("\nExecution times (in seconds):\n");
-  printf("dgbtrf_time: %f seconds\n", dgbtrf_time);
-  printf("dgbtrftridiag_time: %f seconds\n", dgbtrftridiag_time);
-  printf("dgbtrs_time: %f seconds\n", dgbtrs_time);
-  printf("dgbsv_time: %f seconds\n", dgbsv_time);
+  printf("\nExecution times (in milliseconds):\n");
+  printf("dgbtrf_time: %f milliseconds\n", dgbtrf_time);
+  printf("dgbtrftridiag_time: %f milliseconds\n", dgbtrftridiag_time);
+  printf("dgbtrs_time: %f milliseconds\n", dgbtrs_time);
+  printf("dgbsv_time: %f milliseconds\n", dgbsv_time);
 
   free(RHS);
   free(EX_SOL);
