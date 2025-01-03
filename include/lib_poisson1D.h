@@ -23,6 +23,7 @@ void write_GB_operator_rowMajor_poisson1D(double* AB, int* lab, int *la, char* f
 void write_GB_operator_colMajor_poisson1D(double* AB, int* lab, int* la, char* filename);
 void write_vec(double* vec, int* la, char* filename);
 void write_xy(double* vec, double* x, int* la, char* filename);
+void save_convergence_history(const char* filename, double* resvec, int nbite);
 void eig_poisson1D(int *la, double *eigval);
 double eigmax_poisson1D(int *la, double *eigval);
 double eigmin_poisson1D(int *la, double *eigval);
