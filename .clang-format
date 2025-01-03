@@ -1,0 +1,7 @@
+BasedOnStyle: Google
+BreakBeforeBraces: Attach
+AlignAfterOpenBracket: DontAlign
+ColumnLimit: 0
+AllowShortFunctionsOnASingleLine: Inline
+SortIncludes: false
+IndentWidth: 2
