@@ -8,5 +8,7 @@ COPY . .
 
 ENV HOSTNAME=docker
 RUN mkdir bin && \
+  mkdir -p data && \
+  mkdir -p plot && \
   make all && \
   make run

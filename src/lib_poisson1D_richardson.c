@@ -14,13 +14,13 @@
  * @param la      Pointeur vers le nombre de points (inconnues) de la grille 1D.
  * @param eigval  Pointeur vers les valeurs propres de la matrice associée au problème 1D de Poisson.
  */
-void eig_poisson1D(int* la, double *eigval) {
+void eig_poisson1D(int *la, double *eigval) {
   double h = 1.0 / (*la + 1);  // pas de discrétisation
   double sin_val;              // sin(kπh / 2), où k = 1, 2, ..., la
   for (int k = 1; k <= (*la); ++k) {
     sin_val = sin(k * M_PI * h / 2);
     eigval[k - 1] = 4 * sin_val * sin_val;  // Calcul de la valeur propre pour le k correspondant
-    //printf("Valeur propre %d : %lf\n", k, eigval[k - 1]);
+    // printf("Valeur propre %d : %lf\n", k, eigval[k - 1]);
   }
 }
 
@@ -33,7 +33,7 @@ void eig_poisson1D(int* la, double *eigval) {
  * @param eigval  Pointeur vers les valeurs propres de la matrice associée au problème 1D de Poisson.
  * @return        Return la valeur propre maximale.
  */
-double eigmax_poisson1D(int* la, double *eigval) {
+double eigmax_poisson1D(int *la, double *eigval) {
   double eigmax = eigval[0];
   for (int i = 1; i < *la; ++i) {
     if (eigmax < eigval[i]) {
@@ -52,7 +52,7 @@ double eigmax_poisson1D(int* la, double *eigval) {
  * @param eigval  Pointeur vers les valeurs propres de la matrice associée au problème 1D de Poisson.
  * @return        Retourne la valeur propre minimale.
  */
-double eigmin_poisson1D(int* la, double *eigval) {
+double eigmin_poisson1D(int *la, double *eigval) {
   double eigmin = eigval[0];  // Les valeurs propres de la matrice ne sont pas négatives
   for (int i = 1; i < *la; ++i) {
     if (eigmin > eigval[i]) {
@@ -70,7 +70,7 @@ double eigmin_poisson1D(int* la, double *eigval) {
  * @param la  Pointeur vers le nombre de points (inconnues) de la grille 1D (taille de la matrice carrée la x la).
  * @return    Returne la valeur optimale d'alpha
  */
-double richardson_alpha_opt(int* la, double *eigval) {
+double richardson_alpha_opt(int *la, double *eigval) {
   double eigmax = eigmax_poisson1D(la, eigval);
   double eigmin = eigmin_poisson1D(la, eigval);
 
@@ -78,7 +78,7 @@ double richardson_alpha_opt(int* la, double *eigval) {
     fprintf(stderr, "Erreur : Somme des valeurs propres maximale et minimale est nulle.\n");
     exit(EXIT_FAILURE);
   }
-  
+
   return 2.0 / (eigmax + eigmin);
 }
 
@@ -123,7 +123,6 @@ void richardson_alpha(double *AB, double *RHS, double *X, double *alpha_rich, in
 
     // Calcul du résidu res = B - AX
     cblas_dgbmv(CblasColMajor, CblasNoTrans, *la, *la, *kl, *ku, -1.0, AB, *lab, X, 1, 1.0, res, 1);
-
     // Calcul de la norme du résidu (sans cblas)
     /*
     res_norm = 0.0;
@@ -151,11 +150,127 @@ void richardson_alpha(double *AB, double *RHS, double *X, double *alpha_rich, in
     *nbite = *maxit;
   }
 
+  save_convergence_history("data/convergence_history_richardson.dat", resvec, *nbite);
+
   // Libération de la mémoire
   free(res);
 }
 
+/**
+ * @brief Extrait une matrice tridiagonale au format MB (Matrice Bande) à partir d'une matrice bande générale au format AB.
+ *
+ * @param AB  Pointeur vers la matrice bande d'origine au format col-major (dimension (lab x la)).
+ * @param MB  Pointeur vers la matrice bande tridiagonale au format col-major (dimension (lab x la)).
+ * @param lab Nombre total de bandes significatives dans la matrice AB.
+ * @param la  Taille de la matrice (nombre d'inconnues, c'est-à-dire la taille de la grille).
+ * @param ku  Nombre de sur-diagonales dans la matrice bande AB.
+ * @param kl  Nombre de sous-diagonales dans la matrice bande AB.
+ * @param kv  Indice de la diagonale principale dans la matrice bande AB.
+ */
 void extract_MB_jacobi_tridiag(double *AB, double *MB, int *lab, int *la, int *ku, int *kl, int *kv) {
+  // Copie uniquement de la diagonale principale de AB dans MB
+  for (int i = 0; i < *la; i++) {
+    MB[(*lab / 2) + i * (*lab)] = AB[*kv + i * (*lab)];
+  }
+
+  /*
+  // Impression de la matrice AB (format GB)
+  printf("Matrice AB au format bande (lab=%d, la=%d):\n", *lab, *la);
+  for (int i = 0; i < *lab; i++) {
+    for (int j = 0; j < *la; j++) {
+      printf("%6.2f ", AB[i + j * (*lab)]);
+    }
+    printf("\n");
+  }
+
+  // Impression de la matrice MB
+  printf("Matrice MB au format bande (lab=%d, la=%d):\n", *lab, *la);
+  for (int i = 0; i < *lab; i++) {
+    for (int j = 0; j < *la; j++) {
+      printf("%6.2f ", MB[i + j * (*lab)]);
+    }
+    printf("\n");
+  }
+  */
+}
+
+/**
+ * @brief Implémente la méthode de Jacobi pour résoudre un système linéaire en utilisant le format GB.
+ *
+ * @param AB          Pointeur vers la matrice bande d'origine au format col-major (dimension (lab x la)).
+ * @param RHS         Pointeur vers le tableau contenant le second membre (RHS).
+ * @param X           Pointeur vers le tableau contenant les positions des points de la grille de dimension la.
+ * @param la          Taille de la matrice (nombre d'inconnues, c'est-à-dire la taille de la grille).
+ * @param lab         Nombre total de bandes significatives dans MB (3 pour une matrice tridiagonale, mais seules les diagonales principales sont utilisées ici).
+ * @param tol         Tolérance pour le critère de convergence.
+ * @param maxit       Nombre maximal d'itérations.
+ * @param resvec      Tableau pour stocker l'historique de la norme du résidu à chaque itération.
+ * @param nbite       Pointeur vers le nombre total d'itérations effectuées avant convergence.
+ */
+void jacobi_GB(double *AB, double *RHS, double *X, int *lab, int *la, int *ku, int *kl, double *tol, int *maxit, double *resvec, int *nbite) {
+  double res_norm;
+
+  // Allocation pour la nouvelle solution et le résidu temporaire
+  double *X_new = (double *)malloc((*la) * sizeof(double));
+  double *res = (double *)malloc((*la) * sizeof(double));
+  if (X_new == NULL || res == NULL) {
+    perror("Erreur d'allocation mémoire");
+    exit(EXIT_FAILURE);
+  }
+
+  // Norme de RHS pour normaliser le résidu
+  double norm_rhs = cblas_dnrm2(*la, RHS, 1);
+
+  // Itérations de Jacobi
+  for (int iter = 0; iter < *maxit; iter++) {
+    res_norm = 0.0;
+
+    for (int i = 0; i < *la; i++) {
+      double diag = AB[(*lab / 2) + i * (*lab)];  // Diagonale principale
+      double sum = RHS[i];
+
+      // Contribution de la sous-diagonale
+      if (i > 0) {
+        sum -= AB[((*lab / 2) - 1) + i * (*lab)] * X[i - 1];
+      }
+
+      // Contribution de la sur-diagonale
+      if (i < *la - 1) {
+        sum -= AB[((*lab / 2) + 1) + i * (*lab)] * X[i + 1];
+      }
+
+      // Mise à jour de X_new[i]
+      X_new[i] = sum / diag;
+    }
+
+    // Calcul du résidu : res = RHS - AB * X_new (avec CBLAS)
+    memcpy(res, RHS, (*la) * sizeof(double));  // Initialisation avec RHS
+    cblas_dgbmv(CblasColMajor, CblasNoTrans, *la, *la, *kl, *ku, -1.0, AB, *lab, X_new, 1, 1.0, res, 1);
+
+    // Calcul de la norme du résidu avec CBLAS
+    res_norm = cblas_dnrm2(*la, res, 1) / norm_rhs;
+    resvec[iter] = res_norm;
+
+    // Vérification du critère de convergence
+    if (res_norm < *tol) {
+      *nbite = iter + 1;
+      memcpy(X, X_new, (*la) * sizeof(double));  // Mise à jour finale de X
+      break;
+    }
+
+    // Mise à jour pour l'itération suivante
+    memcpy(X, X_new, (*la) * sizeof(double));
+  }
+
+  if (res_norm >= *tol) {
+    *nbite = *maxit;  // Convergence non atteinte
+  }
+
+  save_convergence_history("data/convergence_history_jacobi.dat", resvec, *nbite);
+
+  // Libération des ressources allouées
+  free(X_new);
+  free(res);
 }
 
 void extract_MB_gauss_seidel_tridiag(double *AB, double *MB, int *lab, int *la, int *ku, int *kl, int *kv) {

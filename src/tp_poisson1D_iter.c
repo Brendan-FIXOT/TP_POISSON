@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
     richardson_alpha(AB, RHS, SOL, &opt_alpha, &lab, &la, &ku, &kl, &tol, &maxit, resvec, &nbite);
     relres = relative_forward_error(SOL, EX_SOL, &la);
     printf("Number of iterations to solve with Richardson with optimal alpha : %d\n", nbite);
-    printf("Relative error : %e\n", relres);
+    printf("Relative error : %e", relres);
 
     free(eigval);
   }
@@ -116,7 +116,13 @@ int main(int argc, char *argv[])
   kl = 1;
   MB = (double *)malloc(sizeof(double) * (lab)*la);
   if (IMPLEM == JAC) {
+    /* Generate MB */
     extract_MB_jacobi_tridiag(AB, MB, &lab, &la, &ku, &kl, &kv);
+    /* Solve with Jacobi */
+    jacobi_GB(AB, RHS, SOL, &lab, &la, &ku, &kl, &tol, &maxit, resvec, &nbite);
+    relres = relative_forward_error(SOL, EX_SOL, &la);
+    printf("Number of iterations to solve with Jacobi : %d\n", nbite);
+    printf("Relative error : %e", relres);
   } else if (IMPLEM == GS) {
     extract_MB_gauss_seidel_tridiag(AB, MB, &lab, &la, &ku, &kl, &kv);
   }
