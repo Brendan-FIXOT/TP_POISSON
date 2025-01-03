@@ -121,10 +121,28 @@ int main(int argc, char *argv[])
     /* Solve with Jacobi */
     jacobi_GB(AB, RHS, SOL, &lab, &la, &ku, &kl, &tol, &maxit, resvec, &nbite);
     relres = relative_forward_error(SOL, EX_SOL, &la);
+    /*
+    for (int i = 0; i < nbite; ++i) {
+      printf("SOL for Jacobi :");
+      printf("SOL[%d] : %lf\n", i, SOL[i]);
+    }
+    */
     printf("Number of iterations to solve with Jacobi : %d\n", nbite);
     printf("Relative error : %e", relres);
   } else if (IMPLEM == GS) {
+    /* Generate MB */
     extract_MB_gauss_seidel_tridiag(AB, MB, &lab, &la, &ku, &kl, &kv);
+    /* Solve with Gauss Seidel */
+    gauss_seidel_GB(AB, RHS, SOL, &lab, &la, &ku, &kl, &tol, &maxit, resvec, &nbite);
+    /*
+    for (int i = 0; i < nbite; ++i) {
+      printf("SOL for Gauss Seidel :");
+      printf("SOL[%d] : %lf\n", i, SOL[i]);
+    }
+    */
+    relres = relative_forward_error(SOL, EX_SOL, &la);
+    printf("Number of iterations to solve with Gauss Seidel : %d\n", nbite);
+    printf("Relative error : %e", relres);
   }
 
   /* Solve with General Richardson */

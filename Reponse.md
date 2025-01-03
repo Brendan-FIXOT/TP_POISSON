@@ -157,7 +157,7 @@
 
 ## **2. Calcul de l'erreur par rapport à la solution analytique**
 - L'erreur par rapport à la solution analytique (EX_SOL) est calculé avec la fonction relative_forward_error() dans définie dans lib_poisson1D.c.
-- Le résultat est le même que Richardson, car les mêmes méthodes du calcul du résidu sont utilisées.
+- La précision est le même que Richardson, car les mêmes méthodes du calcul du résidu sont utilisées.
 
 ## **3. Analyse de la convergence**
 - L'analyse de la convergence a été réalisée en sauvegardant le vecteur resvec (qui stocke les normes des résidus à chaque itération) ainsi que le nombre d'itérations dans un fichier convergence_history_jacobi.dat.
@@ -165,3 +165,38 @@
 
 ![Convergence de Jacobi](assets/convergence_history_jacobi.png "Graphique de convergence de Jacobi")
 
+# **Exercice 9 : Implémentation C - Gauss-Seidel**
+
+## **1. Implémentation en C de l'algorithme de Gauss-Seidel au format GB**
+- L'algorithme de Gauss-Seidel a été implémenté en utilisant la matrice AB au format GB (General Band), associée au problème 1D de Poisson.
+- Dans cette méthode, le calcul des résidus est similaire à celui utilisé dans Richardson et Jacobi.
+- Le calcul de la solution, lui est différent :
+  - Contrairement à Jacobi, Gauss-Seidel met à jour chaque composante $ X[i] $ en place, ce qui signifie que les nouvelles valeurs calculées pour $ X[i] $ sont immédiatement utilisées dans les calculs des composantes suivantes.
+  - L'algorithme exploite la décomposition $ A = D - E - F $, où :
+    - $ D $ est la diagonale principale.
+    - $ E $ est la sous-diagonale.
+    - $ F $ est la sur-diagonale.
+  - L'équation $ (D - E) X^{(k+1)} = F X^{(k)} + \text{RHS} $ est résolue à chaque itération, ce qui revient à :
+    $$
+    X[i] = \frac{\text{RHS}[i] - \sum_{j < i} A[i][j] \cdot X^{(k+1)}[j] - \sum_{j > i} A[i][j] \cdot X^{(k)}[j]}{A[i][i]}
+    $$
+    - Le terme $ \sum_{j < i} A[i][j] \cdot X^{(k+1)}[j] $ utilise les nouvelles valeurs calculées dans l'itération courante.
+    - Le terme $ \sum_{j > i} A[i][j] \cdot X^{(k)}[j] $ utilise les anciennes valeurs.
+
+
+- Finalement, Gauss-Seidel fait 2x moins d'itérations que Jacobi et Richardson. Cela est dû au fait qu'il utilise les mises à jour immédiates des composantes $ X[i] $ dans chaque itération. Une étude comparative en termes de temps sera effectuée plus tard.
+- Cette méthode exploite mieux la dépendance des inconnues entre elles, mais peut être moins efficace pour les systèmes mal conditionnés.
+
+---
+
+## **2. Calcul de l'erreur par rapport à la solution analytique**
+- L'erreur par rapport à la solution analytique (EX_SOL) est calculé avec la fonction relative_forward_eror() dans définie dans lib_poisson1D.c.
+- La précision est similaire à Jacobi et Richardson.
+
+---
+
+## **3. Analyse de la convergence**
+- L'analyse de la convergence a été réalisée en sauvegardant le vecteur resvec (qui stocke les normes des résidus à chaque itération) ainsi que le nombre d'itérations dans un fichier convergence_history_jacobi.dat.
+- Les données extraites ont ensuite été utilisées pour tracer l'historique de convergence à l'aide d'un script Gnuplot.
+
+![Convergence de Gauss-Seidel](assets/convergence_history_gauss_seidel.png "Graphique de convergence de Gauss-Seidel")

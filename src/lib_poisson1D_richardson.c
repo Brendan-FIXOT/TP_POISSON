@@ -159,6 +159,9 @@ void richardson_alpha(double *AB, double *RHS, double *X, double *alpha_rich, in
 /**
  * @brief Extrait une matrice tridiagonale au format MB (Matrice Bande) à partir d'une matrice bande générale au format AB.
  *
+ * La matrice MB est définie comme (M = D), où :
+ * D est la diagonale principale.
+ *
  * @param AB  Pointeur vers la matrice bande d'origine au format col-major (dimension (lab x la)).
  * @param MB  Pointeur vers la matrice bande tridiagonale au format col-major (dimension (lab x la)).
  * @param lab Nombre total de bandes significatives dans la matrice AB.
@@ -171,6 +174,7 @@ void extract_MB_jacobi_tridiag(double *AB, double *MB, int *lab, int *la, int *k
   // Copie uniquement de la diagonale principale de AB dans MB
   for (int i = 0; i < *la; i++) {
     MB[(*lab / 2) + i * (*lab)] = AB[*kv + i * (*lab)];
+    // printf("lab = %d et lab/2 = %d\n", *lab, (*lab/2));
   }
 
   /*
@@ -221,6 +225,13 @@ void jacobi_GB(double *AB, double *RHS, double *X, int *lab, int *la, int *ku, i
   // Norme de RHS pour normaliser le résidu
   double norm_rhs = cblas_dnrm2(*la, RHS, 1);
 
+  // Initialisation du résidu, puis calcul du résidu avant d'entrer dans la boucle pour avoir 1 en première valeur de resvec
+  memcpy(res, RHS, (*la) * sizeof(double));
+  cblas_dgbmv(CblasColMajor, CblasNoTrans, *la, *la, *kl, *ku, -1.0, AB, *lab, X, 1, 1.0, res, 1);
+  res_norm = cblas_dnrm2(*la, res, 1) / norm_rhs;
+
+  resvec[0] = res_norm;
+
   // Itérations de Jacobi
   for (int iter = 0; iter < *maxit; iter++) {
     res_norm = 0.0;
@@ -249,7 +260,7 @@ void jacobi_GB(double *AB, double *RHS, double *X, int *lab, int *la, int *ku, i
 
     // Calcul de la norme du résidu avec CBLAS
     res_norm = cblas_dnrm2(*la, res, 1) / norm_rhs;
-    resvec[iter] = res_norm;
+    resvec[iter + 1] = res_norm;
 
     // Vérification du critère de convergence
     if (res_norm < *tol) {
@@ -266,14 +277,128 @@ void jacobi_GB(double *AB, double *RHS, double *X, int *lab, int *la, int *ku, i
     *nbite = *maxit;  // Convergence non atteinte
   }
 
-  save_convergence_history("data/convergence_history_jacobi.dat", resvec, *nbite);
+  save_convergence_history("data/convergence_history_jacobi.dat", resvec, *nbite + 1);
 
   // Libération des ressources allouées
   free(X_new);
   free(res);
 }
 
+/**
+ * @brief Extrait la matrice MB pour la méthode de Gauss-Seidel à partir de la matrice AB au format tridiagonal.
+ *
+ * La matrice MB est définie comme (M = D - E), où :
+ * - D est la diagonale principale.
+ * - E est la sous-diagonale.
+ *
+ * @param AB  Pointeur vers la matrice bande originale au format GB (dimension lab x la).
+ * @param MB  Pointeur vers la matrice bande extraite pour Gauss-Seidel (dimension lab x la).
+ * @param lab Nombre total de bandes significatives dans AB.
+ * @param la  Taille de la matrice carrée (nombre d'inconnues).
+ * @param ku  Nombre de sur-diagonales dans AB.
+ * @param kl  Nombre de sous-diagonales dans AB.
+ * @param kv  Indice de la diagonale principale dans AB.
+ */
 void extract_MB_gauss_seidel_tridiag(double *AB, double *MB, int *lab, int *la, int *ku, int *kl, int *kv) {
+  // Copie de la diagonale principale de AB dans MB
+  for (int i = 0; i < *la; i++) {
+    MB[(*lab / 2) + i * (*lab)] = AB[*kv + i * (*lab)];
+  }
+
+  // Copie de la sous-diagonale (E, négative pour M = D - E)
+  if (*kl > 0) {
+    for (int i = 0; i < *la; i++) {
+      MB[((*lab / 2) + 1) + i * (*lab)] = -AB[(*kv + 1) + i * (*lab)];
+    }
+  }
+
+  /*
+  // Impression de la matrice AB (format GB)
+  printf("Matrice AB au format bande (lab=%d, la=%d):\n", *lab, *la);
+  for (int i = 0; i < *lab; i++) {
+    for (int j = 0; j < *la; j++) {
+      printf("%6.2f ", AB[i + j * (*lab)]);
+    }
+    printf("\n");
+  }
+
+  // Impression de la matrice MB
+  printf("Matrice MB au format bande (lab=%d, la=%d):\n", *lab, *la);
+  for (int i = 0; i < *lab; i++) {
+    for (int j = 0; j < *la; j++) {
+      printf("%6.2f ", MB[i + j * (*lab)]);
+    }
+    printf("\n");
+  }
+  */
+}
+
+void gauss_seidel_GB(double *AB, double *RHS, double *X, int *lab, int *la, int *ku, int *kl, double *tol, int *maxit, double *resvec, int *nbite) {
+  double res_norm;
+
+  // Allocation pour le résidu temporaire
+  double *res = (double *)malloc((*la) * sizeof(double));
+  if (res == NULL) {
+    perror("Erreur d'allocation mémoire pour le résidu");
+    exit(EXIT_FAILURE);
+  }
+
+  // Norme de RHS pour normaliser le résidu
+  double norm_rhs = cblas_dnrm2(*la, RHS, 1);
+
+  
+  // Initialisation du résidu, puis calcul du résidu avant d'entrer dans la boucle pour avoir 1 en première valeur de resvec
+  memcpy(res, RHS, (*la) * sizeof(double));
+  cblas_dgbmv(CblasColMajor, CblasNoTrans, *la, *la, *kl, *ku, -1.0, AB, *lab, X, 1, 1.0, res, 1);
+  res_norm = cblas_dnrm2(*la, res, 1) / norm_rhs;
+
+  resvec[0] = res_norm;
+
+  // Boucle d'itérations
+  for (int iter = 0; iter < *maxit; iter++) {
+    // Mise à jour de X en place
+    for (int i = 0; i < *la; i++) {
+      double diag = AB[(*lab / 2) + i * (*lab)];
+      double sum = RHS[i];
+
+      // Contribution de la sous-diagonale
+      if (i > 0) {
+        sum -= AB[((*lab / 2) - 1) + i * (*lab)] * X[i - 1];
+      }
+
+      // Contribution de la sur-diagonale
+      if (i < *la - 1) {
+        sum -= AB[((*lab / 2) + 1) + i * (*lab)] * X[i + 1];
+      }
+
+      // Mise à jour de X[i]
+      X[i] = sum / diag;
+    }
+
+    // Calcul du résidu res = RHS - AB * X
+    memcpy(res, RHS, (*la) * sizeof(double));
+    cblas_dgbmv(CblasColMajor, CblasNoTrans, *la, *la, *kl, *ku, -1.0, AB, *lab, X, 1, 1.0, res, 1);
+
+    // Calcul de la norme relative du résidu
+    res_norm = cblas_dnrm2(*la, res, 1) / norm_rhs;
+    resvec[iter + 1] = res_norm;
+
+    // Vérification du critère de convergence
+    if (res_norm < *tol) {
+      *nbite = iter + 1;
+      break;
+    }
+  }
+
+  // Si convergence non atteinte
+  if (res_norm >= *tol) {
+    *nbite = *maxit;
+  }
+
+  save_convergence_history("data/convergence_history_gauss_seidel.dat", resvec, *nbite + 1);
+
+  // Libération de la mémoire allouée
+  free(res);
 }
 
 void richardson_MB(double *AB, double *RHS, double *X, double *MB, int *lab, int *la, int *ku, int *kl, double *tol, int *maxit, double *resvec, int *nbite) {
