@@ -1,6 +1,6 @@
 /**********************************************/
 /* lib_poisson1D.c                            */
-/* Numerical library developed to solve 1D    */ 
+/* Numerical library developed to solve 1D    */
 /* Poisson problem (Heat equation)            */
 /**********************************************/
 #include "lib_poisson1D.h"
@@ -12,7 +12,7 @@
  * @param la    Nombre de points (inconnues) de la grille 1D (taille de la matrice carrée la x la).
  * @param kv    Position de la diagonale principale dans la matrice bande (pour lab = 3, kv = 1).
  */
-void set_GB_operator_colMajor_poisson1D(double* AB, int* lab, int *la, int *kv){
+void set_GB_operator_colMajor_poisson1D(double* AB, int* lab, int* la, int* kv) {
   // Initialisation à zéro
   for (int i = 0; i < (*lab) * (*la); i++) {
     AB[i] = 0.0;
@@ -21,16 +21,27 @@ void set_GB_operator_colMajor_poisson1D(double* AB, int* lab, int *la, int *kv){
   // Remplissage de la diagonale principale et des bandes sous/sur diagonale
   for (int i = 0; i < *la; i++) {
     // Bande sous-diagonale
-    if (i > 0) {
-      AB[((*kv) - 1) + i * (*lab)] = -1.0;
-    }
+    AB[(*kv) + i * (*lab)] = -1.0;
     // Diagonale principale
-    AB[(*kv) + i * (*lab)] = 2.0;
+    AB[(*kv) + 1 + i * (*lab)] = 2.0;
     // Bande sur-diagonale
-    if (i < (*la) - 1) {
-      AB[((*kv) + 1) + i * (*lab)] = -1.0;
-    }
+    AB[(*kv) + 2 + i * (*lab)] = -1.0;
   }
+
+  AB[(*kv)] = 0.0; // Premier élément de la diagonale principale
+  AB[(*lab) * (*la) - 1] = 0.0; // Dernier élément de la bande sur-diagonale
+
+  // Impression de la matrice au format GB, car problème dans la méthode Richardson avec alpha
+  /*
+  // Impression de la matrice en format bande
+  printf("Matrice AB au format bande (lab=%d, la=%d):\n", *lab, *la);
+  for (int i = 0; i < *lab; i++) {
+    for (int j = 0; j < *la; j++) {
+      printf("%6.2f ", AB[i + j * (*lab)]);
+    }
+    printf("\n");
+  }
+  */
 }
 /**
  * @brief Initialise la matrice identité au format bande (GB) en stockage colonne par colonne (col-major).
@@ -39,7 +50,7 @@ void set_GB_operator_colMajor_poisson1D(double* AB, int* lab, int *la, int *kv){
  * @param la    Nombre de points (inconnues) de la grille 1D (taille de la matrice carrée la x la).
  * @param kv    Position de la diagonale principale dans la matrice bande (pour lab = 3, kv = 1).
  */
-void set_GB_operator_colMajor_poisson1D_Id(double* AB, int* lab, int *la, int *kv){
+void set_GB_operator_colMajor_poisson1D_Id(double* AB, int* lab, int* la, int* kv) {
   // Initialisation à zéro
   for (int i = 0; i < (*lab) * (*la); i++) {
     AB[i] = 0.0;
@@ -57,14 +68,14 @@ void set_GB_operator_colMajor_poisson1D_Id(double* AB, int* lab, int *la, int *k
  * @param BC0   Pointeur vers la valeur de la condition de Dirichlet au bord gauche (u(0) = BC0).
  * @param BC1   Pointeur vers la valeur de la condition de Dirichlet au bord droit (u(1) = BC1).
  */
-void set_dense_RHS_DBC_1D(double* RHS, int* la, double* BC0, double* BC1){
+void set_dense_RHS_DBC_1D(double* RHS, int* la, double* BC0, double* BC1) {
   // Initialisation à zéro
   for (int i = 0; i < *la; i++) {
     RHS[i] = 0.0;
   }
   // Condition au bord de DIRICHLET
-  RHS[0] = *BC0; // Gauche
-  RHS[(*la) - 1] = *BC1; // Droit
+  RHS[0] = *BC0;          // Gauche
+  RHS[(*la) - 1] = *BC1;  // Droit
 }
 
 /**
@@ -75,9 +86,9 @@ void set_dense_RHS_DBC_1D(double* RHS, int* la, double* BC0, double* BC1){
  * @param BC0     Pointeur vers la valeur de la condition de Dirichlet au bord gauche (u(0) = BC0).
  * @param BC1     Pointeur vers la valeur de la condition de Dirichlet au bord droit (u(1) = BC1).
  */
-void set_analytical_solution_DBC_1D(double* EX_SOL, double* X, int* la, double* BC0, double* BC1){
+void set_analytical_solution_DBC_1D(double* EX_SOL, double* X, int* la, double* BC0, double* BC1) {
   for (int i = 0; i < *la; i++) {
-    EX_SOL[i] = *BC0 + X[i] * (*BC1 - *BC0); // Solution linéaire de l'énoncé
+    EX_SOL[i] = *BC0 + X[i] * (*BC1 - *BC0);  // Solution linéaire de l'énoncé
   }
 }
 
@@ -86,8 +97,8 @@ void set_analytical_solution_DBC_1D(double* EX_SOL, double* X, int* la, double* 
  * @param X   Pointeur vers le tableau contenant les positions des points de la grille de dimension la.
  * @param la  Pointeur vers le nombre de points (inconnues) de la grille 1D (taille de la matrice carrée la x la).
  */
-void set_grid_points_1D(double* x, int* la){
-  double h = 1.0 / ((*la) + 1); // pas de la grille
+void set_grid_points_1D(double* x, int* la) {
+  double h = 1.0 / ((*la) + 1);  // pas de la grille
   for (int i = 0; i < *la; i++) {
     x[i] = (i + 1) * h;
   }
@@ -100,22 +111,22 @@ void set_grid_points_1D(double* x, int* la){
  * @param la  Pointeur vers le nombre de points (inconnues) de la grille 1D (taille de la matrice carrée la x la).
  * @return La valeur de l'erreur relative.
  */
-double relative_forward_error(double* x, double* y, int* la){
+double relative_forward_error(double* x, double* y, int* la) {
   double num = 0.0;
   double den = 0.0;
   for (int i = 0; i < *la; i++) {
-    num += (x[i] - y[i]) * (x[i] - y[i]); // Norme 2 du vecteur des erreurs
-    den += y[i] * y[i]; // Norme 2 de la solution de référence (on prend y car dans l'appel de la fonction l'argument y est EX_SOL)
+    num += (x[i] - y[i]) * (x[i] - y[i]);  // Norme 2 du vecteur des erreurs
+    den += y[i] * y[i];                    // Norme 2 de la solution de référence (on prend y car dans l'appel de la fonction l'argument y est EX_SOL)
   }
   return sqrt(num) / sqrt(den);
 }
 
-int indexABCol(int i, int j, int *lab){
+int indexABCol(int i, int j, int* lab) {
   return 0;
 }
 
 /**
- * @brief Effectue la factorisation LU d'une matrice tridiagonale au format bande (GB). 
+ * @brief Effectue la factorisation LU d'une matrice tridiagonale au format bande (GB).
  * @param la     Nombre de points (inconnues) de la grille 1D (taille de la matrice carrée la x la).
  * @param n      Taille de la matrice A (logiquement la même que la).
  * @param kl     Nombre de sous-diagonales (pour une tridiagonale, kl = 1).
@@ -126,13 +137,13 @@ int indexABCol(int i, int j, int *lab){
  * @param info   Indicateur de succès de la factorisation.
  * @return info  Retourne 0 si la factorisation réussit, sinon une erreur.
  */
-int dgbtrftridiag(int *la, int* n, int *kl, int *ku, double *AB, int *lab, int *ipiv, int *info){
+int dgbtrftridiag(int* la, int* n, int* kl, int* ku, double* AB, int* lab, int* ipiv, int* info) {
   *info = 0;
   for (int k = 0; k < (*la) - 1; k++) {
     // Vérification du pivot
     double pivot = AB[1 + k * (*lab)];
     if (pivot == 0.0) {
-      *info = k + 1; 
+      *info = k + 1;
       return *info;  // Retourne immédiatement l'erreur
     }
 

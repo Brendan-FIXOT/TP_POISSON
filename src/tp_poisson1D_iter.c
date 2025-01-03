@@ -9,7 +9,7 @@
 #define JAC 1
 #define GS 2
 
-int main(int argc,char *argv[])
+int main(int argc, char *argv[])
 /* ** argc: Number of arguments */
 /* ** argv: Values of arguments */
 {
@@ -25,7 +25,8 @@ int main(int argc,char *argv[])
   double *RHS, *SOL, *EX_SOL, *X;
   double *AB;
   double *MB;
-  
+  double *eigval;
+
   double temp, relres;
 
   double opt_alpha;
@@ -38,59 +39,73 @@ int main(int argc,char *argv[])
   }
 
   /* Size of the problem */
-  NRHS=1;
-  nbpoints=12;
-  la=nbpoints-2;
+  NRHS = 1;
+  nbpoints = 12;
+  la = nbpoints - 2;
 
   /* Dirichlet Boundary conditions */
-  T0=5.0;
-  T1=20.0;
+  T0 = 5.0;
+  T1 = 20.0;
 
   printf("--------- Poisson 1D ---------\n\n");
-  RHS=(double *) malloc(sizeof(double)*la);
-  SOL=(double *) calloc(la, sizeof(double)); 
-  EX_SOL=(double *) malloc(sizeof(double)*la);
-  X=(double *) malloc(sizeof(double)*la);
+  RHS = (double *)malloc(sizeof(double) * la);
+  SOL = (double *)calloc(la, sizeof(double));
+  EX_SOL = (double *)malloc(sizeof(double) * la);
+  X = (double *)malloc(sizeof(double) * la);
 
   /* Setup the Poisson 1D problem */
   /* General Band Storage */
   set_grid_points_1D(X, &la);
-  set_dense_RHS_DBC_1D(RHS,&la,&T0,&T1);
+  set_dense_RHS_DBC_1D(RHS, &la, &T0, &T1);
   set_analytical_solution_DBC_1D(EX_SOL, X, &la, &T0, &T1);
-  
+
   write_vec(RHS, &la, "RHS.dat");
   write_vec(EX_SOL, &la, "EX_SOL.dat");
   write_vec(X, &la, "X_grid.dat");
 
-  kv=0;
-  ku=1;
-  kl=1;
-  lab=kv+kl+ku+1;
-  
-  AB = (double *) malloc(sizeof(double)*lab*la);
+  kv = 0;
+  ku = 1;
+  kl = 1;
+  lab = kv + kl + ku + 1;
+
+  /* Solve */
+  double tol = 1e-3;
+  int maxit = 1000;
+  double *resvec;
+  int nbite = 0;
+
+  resvec = (double *)calloc(maxit, sizeof(double));
+
+  AB = (double *)malloc(sizeof(double) * lab * la);
   set_GB_operator_colMajor_poisson1D(AB, &lab, &la, &kv);
-  
+
   /* uncomment the following to check matrix A */
   write_GB_operator_colMajor_poisson1D(AB, &lab, &la, "AB.dat");
-  
+
   /********************************************/
   /* Solution (Richardson with optimal alpha) */
 
-  /* Computation of optimum alpha */
-  opt_alpha = richardson_alpha_opt(&la);
-  printf("Optimal alpha for simple Richardson iteration is : %lf",opt_alpha); 
-
-  /* Solve */
-  double tol=1e-3;
-  int maxit=1000;
-  double *resvec;
-  int nbite=0;
-
-  resvec=(double *) calloc(maxit, sizeof(double));
-
-  /* Solve with Richardson alpha */
   if (IMPLEM == ALPHA) {
+    /* Computation of optimum alpha */
+    eigval = (double *)malloc(sizeof(double) * la);
+    if (eigval == NULL) {
+      perror("Erreur d'allocation mémoire pour eigval");
+      exit(EXIT_FAILURE);
+    }
+    // Calcul des valeurs propres
+    eig_poisson1D(&la, eigval);
+    // Calcul de l'alpha optimal pour Richardson
+    opt_alpha = richardson_alpha_opt(&la, eigval);
+    printf("Optimal alpha for simple Richardson iteration is : %lf\n", opt_alpha);
+
+    /* Solve with Richardson alpha */
+
     richardson_alpha(AB, RHS, SOL, &opt_alpha, &lab, &la, &ku, &kl, &tol, &maxit, resvec, &nbite);
+    relres = relative_forward_error(SOL, EX_SOL, &la);
+    printf("Number of iterations to solve with Richardson with optimal alpha : %d\n", nbite);
+    printf("Relative error : %e\n", relres);
+
+    free(eigval);
   }
 
   /* Richardson General Tridiag */
@@ -99,7 +114,7 @@ int main(int argc,char *argv[])
   kv = 1;
   ku = 1;
   kl = 1;
-  MB = (double *) malloc(sizeof(double)*(lab)*la);
+  MB = (double *)malloc(sizeof(double) * (lab)*la);
   if (IMPLEM == JAC) {
     extract_MB_jacobi_tridiag(AB, MB, &lab, &la, &ku, &kl, &kv);
   } else if (IMPLEM == GS) {
@@ -117,6 +132,8 @@ int main(int argc,char *argv[])
 
   /* Write convergence history */
   write_vec(resvec, &nbite, "RESVEC.dat");
+
+  /* Relative forward error */
 
   free(resvec);
   free(RHS);
