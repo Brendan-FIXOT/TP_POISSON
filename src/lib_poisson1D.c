@@ -5,105 +5,68 @@
 /**********************************************/
 #include "lib_poisson1D.h"
 
-/**
- * @brief Initialise l'opérateur de Poisson 1D au format bande (GB) en stockage colonne par colonne (col-major).
- * @param AB    Pointeur vers le tableau de la matrice bande au format col-major (dimension (lab x la)).
- * @param lab   Pointeur vers le nombre total de bandes significatives (par exemple 3 pour une tridiagonale).
- * @param la    Nombre de points (inconnues) de la grille 1D (taille de la matrice carrée la x la).
- * @param kv    Position de la diagonale principale dans la matrice bande (pour lab = 3, kv = 1).
- */
-void set_GB_operator_colMajor_poisson1D(double* AB, int* lab, int* la, int* kv) {
-  // Initialisation à zéro
-  for (int i = 0; i < (*lab) * (*la); i++) {
-    AB[i] = 0.0;
-  }
-
-  // Remplissage de la diagonale principale et des bandes sous/sur diagonale
-  for (int i = 0; i < *la; i++) {
-    // Bande sous-diagonale
-    AB[(*kv) + i * (*lab)] = -1.0;
-    // Diagonale principale
-    AB[(*kv) + 1 + i * (*lab)] = 2.0;
-    // Bande sur-diagonale
-    AB[(*kv) + 2 + i * (*lab)] = -1.0;
-  }
-
-  AB[(*kv)] = 0.0; // Premier élément de la diagonale principale
-  AB[(*lab) * (*la) - 1] = 0.0; // Dernier élément de la bande sur-diagonale
-
-  // Impression de la matrice au format GB, car problème dans la méthode Richardson avec alpha
-  /*
-  // Impression de la matrice en format bande
-  printf("Matrice AB au format bande (lab=%d, la=%d):\n", *lab, *la);
-  for (int i = 0; i < *lab; i++) {
-    for (int j = 0; j < *la; j++) {
-      printf("%6.2f ", AB[i + j * (*lab)]);
+void set_GB_operator_colMajor_poisson1D(double* AB, int *lab, int *la, int *kv){
+  int ii, jj, kk;
+  for (jj=0;jj<(*la);jj++){
+    kk = jj*(*lab);
+    if (*kv>=0){
+      for (ii=0;ii< *kv;ii++){
+	AB[kk+ii]=0.0;
+      }
     }
-    printf("\n");
+    AB[kk+ *kv]=-1.0;
+    AB[kk+ *kv+1]=2.0;
+    AB[kk+ *kv+2]=-1.0;
   }
-  */
-}
-/**
- * @brief Initialise la matrice identité au format bande (GB) en stockage colonne par colonne (col-major).
- * @param AB    Pointeur vers le tableau de la matrice bande au format col-major (dimension (lab x la)).
- * @param lab   Pointeur vers le nombre total de bandes significatives (par exemple 3 pour une tridiagonale).
- * @param la    Nombre de points (inconnues) de la grille 1D (taille de la matrice carrée la x la).
- * @param kv    Position de la diagonale principale dans la matrice bande (pour lab = 3, kv = 1).
- */
-void set_GB_operator_colMajor_poisson1D_Id(double* AB, int* lab, int* la, int* kv) {
-  // Initialisation à zéro
-  for (int i = 0; i < (*lab) * (*la); i++) {
-    AB[i] = 0.0;
-  }
-  // Remplissage de la diagonale principale avec des 1
-  for (int i = 0; i < *la; i++) {
-    AB[(*kv) + i * (*lab)] = 1.0;
-  }
+  AB[0]=0.0;
+  if (*kv == 1) {AB[1]=0;}
+  
+  AB[(*lab)*(*la)-1]=0.0;
 }
 
-/**
- * @brief Initialise le second membre (RHS) pour le problème de Poisson 1D avec conditions de Dirichlet.
- * @param RHS   Pointeur vers le tableau (de dimension la) contenant le second membre (RHS) à construire.
- * @param la    Pointeur vers le nombre de points (inconnues) de la grille 1D (taille de la matrice carrée la x la).
- * @param BC0   Pointeur vers la valeur de la condition de Dirichlet au bord gauche (u(0) = BC0).
- * @param BC1   Pointeur vers la valeur de la condition de Dirichlet au bord droit (u(1) = BC1).
- */
-void set_dense_RHS_DBC_1D(double* RHS, int* la, double* BC0, double* BC1) {
-  // Initialisation à zéro
-  for (int i = 0; i < *la; i++) {
-    RHS[i] = 0.0;
+void set_GB_operator_colMajor_poisson1D_Id(double* AB, int *lab, int *la, int *kv){
+  int ii, jj, kk;
+  for (jj=0;jj<(*la);jj++){
+    kk = jj*(*lab);
+    if (*kv>=0){
+      for (ii=0;ii< *kv;ii++){
+	AB[kk+ii]=0.0;
+      }
+    }
+    AB[kk+ *kv]=0.0;
+    AB[kk+ *kv+1]=1.0;
+    AB[kk+ *kv+2]=0.0;
   }
-  // Condition au bord de DIRICHLET
-  RHS[0] = *BC0;          // Gauche
-  RHS[(*la) - 1] = *BC1;  // Droit
+  AB[1]=0.0;
+  AB[(*lab)*(*la)-1]=0.0;
 }
 
-/**
- * @brief Calcule la solution analytique de l'équation de Poisson 1D avec conditions de Dirichlet.
- * @param EX_SOL  Pointeur vers le tableau contenant la solution analytique de dimension la.
- * @param X       Pointeur vers le tableau contenant les positions des points de la grille de dimension la.
- * @param la      Pointeur vers le nombre de points (inconnues) de la grille 1D (taille de la matrice carrée la x la).
- * @param BC0     Pointeur vers la valeur de la condition de Dirichlet au bord gauche (u(0) = BC0).
- * @param BC1     Pointeur vers la valeur de la condition de Dirichlet au bord droit (u(1) = BC1).
- */
-void set_analytical_solution_DBC_1D(double* EX_SOL, double* X, int* la, double* BC0, double* BC1) {
-  for (int i = 0; i < *la; i++) {
-    EX_SOL[i] = *BC0 + X[i] * (*BC1 - *BC0);  // Solution linéaire de l'énoncé
+void set_dense_RHS_DBC_1D(double* RHS, int* la, double* BC0, double* BC1){
+  int jj;
+  RHS[0]= *BC0;
+  RHS[(*la)-1]= *BC1;
+  for (jj=1;jj<(*la)-1;jj++){
+    RHS[jj]=0.0;
+  }
+}  
+
+void set_analytical_solution_DBC_1D(double* EX_SOL, double* X, int* la, double* BC0, double* BC1){
+  int jj;
+  double h, DELTA_T;
+  DELTA_T=(*BC1)-(*BC0);
+  for (jj=0;jj<(*la);jj++){
+    EX_SOL[jj] = (*BC0) + X[jj]*DELTA_T;
+  }
+}  
+
+void set_grid_points_1D(double* x, int* la){
+  int jj;
+  double h;
+  h=1.0/(1.0*((*la)+1));
+  for (jj=0;jj<(*la);jj++){
+    x[jj]=(jj+1)*h;
   }
 }
-
-/**
- * @brief Calcule les points de la grille 1D uniformément espacés sur l'intervalle [0, 1].
- * @param X   Pointeur vers le tableau contenant les positions des points de la grille de dimension la.
- * @param la  Pointeur vers le nombre de points (inconnues) de la grille 1D (taille de la matrice carrée la x la).
- */
-void set_grid_points_1D(double* x, int* la) {
-  double h = 1.0 / ((*la) + 1);  // pas de la grille
-  for (int i = 0; i < *la; i++) {
-    x[i] = (i + 1) * h;
-  }
-}
-
 /**
  * @brief Calcule l'erreur relative directe entre deux vecteurs.
  * @param x   Pointeur vers le vecteur de la solution approchée de dimension *la.
