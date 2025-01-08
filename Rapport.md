@@ -74,7 +74,7 @@ $$
 
 ### 2.2 Exemple avec $ n = 5 $
 
-Pour une matrice tridiagonale avec \( n = 5 \), \( kl = 1 \), et \( ku = 1 \), le stockage par bande est illustré par :
+Pour une matrice tridiagonale avec $ n = 5 $, $ kl = 1 $, et $ ku = 1 $, le stockage par bande est illustré par :
 $
 A =
 \begin{bmatrix}
@@ -180,7 +180,7 @@ $
 # **Exercice 5 : DGBTRF, DGBTRS, DGBSV**
 
 ## **1. Résolution du système linéaire avec LAPACK**
-- Utiliser **dgbsv** directement pour résoudre \(A \cdot X = B\) :
+- Utiliser **dgbsv** directement pour résoudre $A \cdot X = B$ :
   ```c
   dgbsv(&n, &kl, &ku, &nrhs, AB, &ldab, ipiv, B, &ldb, &info);
   ```
@@ -188,27 +188,27 @@ $
 ---
 
 ## **2. Évaluation des performances et complexité**
-- **Complexité de dgbtrf** : \(\mathcal{O}(n \cdot (kl + ku)^2)\)
-- **Complexité de dgbtrs** : \(\mathcal{O}(n \cdot (kl + ku))\)
-- La complexité dépend fortement de la largeur de la bande \((kl + ku)\).
+- **Complexité de dgbtrf** : $\mathcal{O}(n \cdot (kl + ku)^2)$
+- **Complexité de dgbtrs** : $\mathcal{O}(n \cdot (kl + ku))$
+- La complexité dépend fortement de la largeur de la bande $(kl + ku)$.
 
 ---
 
 # **Exercice 6 : LU pour les matrices tridiagonales**
 
 ## **1. Implémentation de la factorisation LU**
-- Soit \(A\) une matrice tridiagonale, la factorisation LU suit les étapes suivantes :
-  Pour \(k = 1, \ldots, n-1\) :
-  - \(L_{k+1, k} = A_{k+1, k} / A_{k, k}\)
-  - \(A_{k+1, k+1} = A_{k+1, k+1} - L_{k+1, k} \cdot A_{k, k+1}\)
+- Soit $A$ une matrice tridiagonale, la factorisation LU suit les étapes suivantes :
+  Pour $k = 1, \ldots, n-1$ :
+  - $L_{k+1, k} = A_{k+1, k} / A_{k, k}$
+  - $A_{k+1, k+1} = A_{k+1, k+1} - L_{k+1, k} \cdot A_{k, k+1}$
 
 ---
 
 ## **2. Méthode de validation**
-- Factorisez \(A\) en \(LU\) avec la méthode manuelle.
+- Factorisez $A$ en $LU$ avec la méthode manuelle.
 - Comparez avec la solution fournie par **dgbtrf**.
 - Calculer la norme de la différence entre les deux matrices :
-  \(\|A - L \cdot U\|\) à l'aide de **dnrm2**.
+  $|A - L \cdot U|$ à l'aide de **dnrm2**.
 - Assurez-vous que la norme de l'erreur est proche de zéro.
 
 ---
