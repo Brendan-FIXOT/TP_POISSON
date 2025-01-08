@@ -122,20 +122,25 @@ $
 ## **5. Fonction dgbtrf**
 
 - Réalise la **factorisation LU** d'une matrice bande  sans permutation des lignes.
+- Sa complexité est de $ O(2*n(kl+ku)) $.
 
 ## **6. Fonction dgbtrs**
 
-- Résout le système :  après une factorisation LU de .
+- Résout le système : Après la factorisation LU obtenue avec `dgbtrf`, cette fonction résout le système linéaire.
+- Sa complexité est de $ O(n(kl+ku)) $
 
 ## **7. Fonction dgbsv**
 
-- Combine **dgbtrf** et **dgbtrs** pour résoudre directement .
+- Combine les étapes de `dgbtrf` (factorisation) et `dgbtrs` (résolution) pour résoudre directement un système linéaire.
 
 ## **8. Calcul de la norme du résidu relatif**
 
-1. Calcul du résidu  avec **dgbmv**.
+1. Calcul du résidu avec **dgbmv**.
 
 2. Calcul de la norme relative :
+$
+\text{norme relative} = \frac{\|r\|_2}{\|b\|_2}
+$
 
 3. Utiliser **dnrm2** pour la norme 2.
 
@@ -239,20 +244,10 @@ $
 # **Exercice 8 : Implémentation C - Jacobi**
 
 ## **1. Implémentation en C de l'algorithme de Jacobi au format GB**
-- L'algorithme de Jacobi a été implémenté en utilisant la matrice AB au format GB (General Band), associée au problème 1D de Poisson.
-- Dedans le calcul des résidus est le même que dans Richardson car on utilise la même matrice qui est au format GB.
-- Le calcul de la solution, lui est différent :
-  
-  - Dans Jacobi, chaque composante $ X[i] $ est mise à jour indépendamment en utilisant uniquement les valeurs de la solution de l'itération précédente $ X^{(k)} $, contrairement à Richardson où $ X^{(k+1)} $ dépend directement de la matrice entière via le paramètre $ \alpha $.
-  
-  - L'algorithme de Jacobi isole chaque inconnue $ X[i] $ de l'équation $ AX = B $, et calcule :
-    $$
-    X[i] = \frac{\text{RHS}[i] - \sum_{j \neq i} A[i][j] \cdot X^{(k)}[j]}{A[i][i]}
-    $$
-    où $$ \sum_{j \neq i} A[i][j] \cdot X[j] $$ est calculé à partir des sous-diagonales et sur-diagonales de la matrice AB.
-  - Cette approche garantit que l'itération $ k+1 $ utilise uniquement les valeurs de $ X $ de l'itération $ k $, respectant la méthode de Jacobi.
+- L'algorithme de Jacobi a été implémenté en utilisant la matrice MB et la méthode de Richardson.
+- L'implémentation de Richardson peut permettre d'utiliser la méthode de résolution de Jacobi, en copiant la matrice AB dans une matrice MB, en prennant seulement l'inverse de la diagonnale principale de AB.
 
-- Finalement, Jacobi fait une itération de moins que Richardson. Cela est dû au fait que $ X $ est calculé avant le calcul du résidu dans chaque itération. Une étude comparative en termes de temps sera effectuée plus tard.
+- Finalement, Jacobi fait le même nombre d'itération que Richardson avec alpha optimal.
 
 ## **2. Calcul de l'erreur par rapport à la solution analytique**
 - L'erreur par rapport à la solution analytique (EX_SOL) est calculé avec la fonction relative_forward_error() dans définie dans lib_poisson1D.c.
@@ -267,35 +262,25 @@ $
 # **Exercice 9 : Implémentation C - Gauss-Seidel**
 
 ## **1. Implémentation en C de l'algorithme de Gauss-Seidel au format GB**
-- L'algorithme de Gauss-Seidel a été implémenté en utilisant la matrice AB au format GB (General Band), associée au problème 1D de Poisson.
-- Dans cette méthode, le calcul des résidus est le même que celui utilisé pour Jacobi (même fonction).
-- Le calcul de la solution, lui est différent :
-  - Contrairement à Jacobi, Gauss-Seidel met à jour chaque composante $ X[i] $ en place, ce qui signifie que les nouvelles valeurs calculées pour $ X[i] $ sont immédiatement utilisées dans les calculs des composantes suivantes.
-  - L'algorithme exploite la décomposition $ A = D - E - F $, où :
+- L'algorithme de Gauss Seidel a été implémenté en utilisant la matrice MB et la méthode de Richardson.
+- L'implémentation de Richardson peut permettre d'utiliser la méthode de résolution de Jacobi, en copiant la matrice AB dans une matrice MB, en faisant la décomposition suivante : $ A = D - E - F $, où :
     - $ D $ est la diagonale principale.
     - $ E $ est la sous-diagonale.
     - $ F $ est la sur-diagonale.
-  - L'équation $ (D - E) X^{(k+1)} = F X^{(k)} + \text{RHS} $ est résolue à chaque itération, ce qui revient à :
-    $$
-    X[i] = \frac{\text{RHS}[i] - \sum_{j < i} A[i][j] \cdot X^{(k+1)}[j] - \sum_{j > i} A[i][j] \cdot X^{(k)}[j]}{A[i][i]}
-    $$
-    - Le terme $ \sum_{j < i} A[i][j] \cdot X^{(k+1)}[j] $ utilise les nouvelles valeurs calculées dans l'itération courante.
-    - Le terme $ \sum_{j > i} A[i][j] \cdot X^{(k)}[j] $ utilise les anciennes valeurs.
 
-
-- Finalement, Gauss-Seidel fait 2x moins d'itérations que Jacobi et Richardson. Cela est dû au fait qu'il utilise les mises à jour immédiates des composantes $ X[i] $ dans chaque itération. Une étude comparative en termes de temps sera effectuée plus tard.
-- Cette méthode exploite mieux la dépendance des inconnues entre elles, mais peut être moins efficace pour les systèmes mal conditionnés.
+- Finalement, Gauss-Seidel est censé près de 2x moins d'itérations que Jacobi et Richardson avec alpha optimal. Or, des incohérences entre le code et l'énoncé ont été remarqué, et finalement nous n'avons pas réussi à faire converger correctement Gauss-Seidel en utilisant Richardson, bien que la matrice MB semble correcte.
 
 ---
 
 ## **2. Calcul de l'erreur par rapport à la solution analytique**
 - L'erreur par rapport à la solution analytique (EX_SOL) est calculé avec la fonction relative_forward_eror() dans définie dans lib_poisson1D.c.
-- La précision est similaire à Jacobi et Richardson.
+- La précision était similaire à Jacobi et Richardson, mais désormais aucune n'est affichée.
 
 ---
 
 ## **3. Analyse de la convergence**
-- L'analyse de la convergence a été réalisée en sauvegardant le vecteur resvec (qui stocke les normes des résidus à chaque itération) ainsi que le nombre d'itérations dans un fichier convergence_history_jacobi.dat.
-- Les données extraites ont ensuite été utilisées pour tracer l'historique de convergence à l'aide d'un script Gnuplot.
+- L'analyse de la convergence avait été réalisée avec la précédente fonction gaussseidel_mb utilisant directement la matrice MB en sauvegardant le vecteur resvec (qui stocke les normes des résidus à chaque itération) ainsi que le nombre d'itérations dans un fichier convergence_history_jacobi.dat.
+- Les données extraites avait ensuite été utilisées pour tracer l'historique de convergence à l'aide d'un script Gnuplot.
+- Vous pouvez le visualisez à titre indicatif, de ce que à quoi le graphique de convergence devait ressembler.
 
 ![Convergence de Gauss-Seidel](assets/convergence_history_gauss_seidel.png "Graphique de convergence de Gauss-Seidel")
